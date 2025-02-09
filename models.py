@@ -1,54 +1,53 @@
+from datetime import datetime
 from config import DSN
-from sqlalchemy import Integer, String, ForeignKey, Text
+from sqlalchemy import Integer, String, ForeignKey, Text, DateTime, CheckConstraint
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy import MetaData
 
-engine = create_async_engine(
-    DSN,
-)
-
+engine = create_async_engine(DSN, echo=True)
 Session = async_sessionmaker(bind=engine, expire_on_commit=False)
 
 class Base(DeclarativeBase):
-    pass
+    metadata = MetaData()
 
 class User(Base):
     __tablename__ = 'user'
+    __table_args__ = (
+        CheckConstraint('length(password) >= 8', name='password_min_length'),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     username: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     firstname: Mapped[str] = mapped_column(String(100), nullable=False)
     lastname: Mapped[str] = mapped_column(String(100), nullable=False)
-    email: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
     password: Mapped[str] = mapped_column(String(100), nullable=False)
     
     clothes: Mapped[list['Clothes']] = relationship('Clothes', back_populates='user')
-    outfits: Mapped[list['Outfit']] = relationship('Outfit', secondary='clothes_outfit', back_populates='users')
+    outfits: Mapped[list['Outfit']] = relationship('Outfit', back_populates='user')
 
 class ClothesType(Base):
     __tablename__ = 'clothes_type'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
-    description: Mapped[str] = mapped_column(Text, nullable=True)
+    category: Mapped[str] = mapped_column(String(100), nullable=False)
 
-    clothes: Mapped[list['Clothes']] = relationship('Clothes', back_populates='clothes_type')
+    clothes: Mapped[list['Clothes']] = relationship('Clothes', back_populates='type')
 
 class Clothes(Base):
     __tablename__ = 'clothes'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-    description: Mapped[str] = mapped_column(Text, nullable=True)
-    size: Mapped[str] = mapped_column(String(50), nullable=True)
-    price: Mapped[float] = mapped_column(Integer, nullable=False)
-    image_url: Mapped[str] = mapped_column(String(255), nullable=True)
-    
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey('user.id'))
-    user: Mapped[User] = relationship('User', back_populates='clothes')
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey('user.id'), index=True)
+    type_id: Mapped[int] = mapped_column(Integer, ForeignKey('clothes_type.id'))
+    image_url: Mapped[str] = mapped_column(String(255))
 
-    clothes_type_id: Mapped[int] = mapped_column(Integer, ForeignKey('clothes_type.id'))
-    clothes_type: Mapped[ClothesType] = relationship('ClothesType', back_populates='clothes')
+    type: Mapped['ClothesType'] = relationship('ClothesType', back_populates='clothes')
+    user: Mapped['User'] = relationship('User', back_populates='clothes')
+    outfits: Mapped[list['Outfit']] = relationship('Outfit', secondary='clothes_outfit', back_populates='clothes')
 
 class Outfit(Base):
     __tablename__ = 'outfit'
@@ -56,22 +55,16 @@ class Outfit(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=True)
-    
-    clothes: Mapped[list['Clothes']] = relationship('Clothes', secondary='clothes_outfit', back_populates='outfits')
-    users: Mapped[list[User]] = relationship('User', secondary='clothes_outfit', back_populates='outfits')
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey('user.id'), index=True)
 
+    user: Mapped['User'] = relationship('User', back_populates='outfits')
+    clothes: Mapped[list['Clothes']] = relationship('Clothes', secondary='clothes_outfit', back_populates='outfits')
 
 class ClothesOutfit(Base):
     __tablename__ = 'clothes_outfit'
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    outfit_id: Mapped[int] = mapped_column(Integer, ForeignKey('outfit.id'))
-    clothes_id: Mapped[int] = mapped_column(Integer, ForeignKey('clothes.id'))
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey('user.id'))
-    
-    clothes: Mapped[Clothes] = relationship('Clothes', back_populates='outfits')
-    outfit: Mapped[Outfit] = relationship('Outfit', back_populates='clothes')
-    user: Mapped[User] = relationship('User', back_populates='outfits')
+    outfit_id: Mapped[int] = mapped_column(ForeignKey('outfit.id'), primary_key=True)
+    clothes_id: Mapped[int] = mapped_column(ForeignKey('clothes.id'), primary_key=True)
 
 ORM_OBJECT = User | ClothesType | Clothes | Outfit | ClothesOutfit
 ORM_CLASS = type(User), type(ClothesType), type(Clothes), type(Outfit), type(ClothesOutfit)

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 import uvicorn
 from lifespan import lifespan
-from routes.GET_routes import router as GET_routes
+from routes.clothes_routes import router as GET_routes
 
 app = FastAPI(
     title="ClothesAPI",
@@ -10,3 +10,6 @@ app = FastAPI(
 )
 
 app.include_router(GET_routes)
+
+
+uvicorn.run(app)
