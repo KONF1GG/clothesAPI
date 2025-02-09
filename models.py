@@ -42,7 +42,7 @@ class Clothes(Base):
     description: Mapped[str] = mapped_column(Text, nullable=True)
     size: Mapped[str] = mapped_column(String(50), nullable=True)
     price: Mapped[float] = mapped_column(Integer, nullable=False)
-    image_url: Mapped[str] = mapped_column(String(255), nullable=True)  # Новое поле для фото
+    image_url: Mapped[str] = mapped_column(String(255), nullable=True)
     
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey('user.id'))
     user: Mapped[User] = relationship('User', back_populates='clothes')
