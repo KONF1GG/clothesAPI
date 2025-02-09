@@ -1,7 +1,9 @@
 from fastapi import FastAPI
+from routes.GET_routes import router as GET_routes
 
-app = FastAPI()
+app = FastAPI(
+    title="ClothesAPI",
+    version='1.0.0'
+)
 
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
+app.include_router(GET_routes)
