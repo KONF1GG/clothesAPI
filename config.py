@@ -3,8 +3,8 @@ import os
 
 load_dotenv()
 
-# POSTGRES_HOST = os.getenv('POSTGRES_HOST')
-POSTGRES_HOST = 'db'
+POSTGRES_HOST = os.getenv('POSTGRES_HOST')
+# POSTGRES_HOST = 'db'
 # POSTGRES_PORT = os.getenv('POSTGRES_PORT')
 POSTGRES_PORT = '5432'
 POSTGRES_USER = os.getenv('POSTGRES_USER')
