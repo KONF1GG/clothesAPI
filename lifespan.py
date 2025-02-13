@@ -8,7 +8,6 @@ async def lifespan(app: FastAPI):
 
     # Создаем таблицы в базе данных
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
 
     async with Session() as session:
@@ -21,31 +20,18 @@ async def lifespan(app: FastAPI):
             "Стопы": ["Туфли", "Ботинки", "Кроссовки", "Сандалии", "Босоножки", "Ботфорты", "Шлепанцы"],
         }
 
-        # Добавляем типы одежды с категориями
+        # Получаем существующие записи
+        existing_types = await session.execute(select(ClothesType))
+        existing_types = {f"{row.name}_{row.category}" for row in existing_types.scalars().all()}
+
+        # Добавляем новые записи, если их нет
         for category_name, types in types_data.items():
             for type_name in types:
-                # Создаем запись типа одежды с категорией
-                new_clothes_type = ClothesType(name=type_name, category=category_name)
-                session.add(new_clothes_type)
+                key = f"{type_name}_{category_name}"
+                if key not in existing_types:
+                    session.add(ClothesType(name=type_name, category=category_name))
 
-            await session.commit()  # Сохраняем типы одежды
-
-        # Добавление пользователя, если его еще нет
-        user = User(
-            username="leo",
-            firstname="Леонтий",
-            lastname="Крохалев",
-            email="krokxa228@gmail.com",
-            password="12345678"
-        )
-        existing_user = await session.execute(
-            select(User).filter(User.username == user.username)
-        )
-        existing_user = existing_user.scalar_one_or_none()
-
-        if not existing_user:
-            session.add(user)
-            await session.commit()
+        await session.commit()  # Сохраняем изменения
 
     yield
     print('STOP')
