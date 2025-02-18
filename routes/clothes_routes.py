@@ -9,8 +9,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from dependencies import SessionDependency, TokenDependency
 from models import Clothes, ClothesType, User
-from schemas import ClothesModel, ClothesModelAll, ItemId, NewClothes, UpdateClothes
+from schemas import ClothesModel, ClothesModelAll, ClothesTypeModel, ItemId, NewClothes, UpdateClothes
 import crud
+from sqlalchemy.orm import selectinload
 
 router = APIRouter()
 
@@ -53,21 +54,24 @@ async def add_clothes(
 
 # Получение всех вещей пользователя
 @router.get('/v1/wardrobes', response_model=list[ClothesModel])
-async def get_wardrobe(session: SessionDependency, token: TokenDependency, user_id: int):
-    """Получить список вещей пользователя по его ID."""
-    result = await session.execute(select(Clothes).where(Clothes.user_id == user_id))
+async def get_wardrobe(session: SessionDependency, user_id: int):
+    """Получить список вещей пользователя с данными о типе одежды."""
+    result = await session.execute(select(Clothes).join(ClothesType).where(Clothes.user_id == user_id).options(selectinload(Clothes.type)))
     clothes = result.unique().scalars().all()
 
     return [
         ClothesModel(
             id=item.id,
             name=item.name,
-            type_id=item.type_id,
             user_id=item.user_id,
+            type=ClothesTypeModel( 
+                id=item.type.id,
+                name=item.type.name,
+                category=item.type.category,
+            ),
         )
         for item in clothes
     ]
-
 @router.get('/v1/wardrobe', response_model=ClothesModelAll)
 async def get_clothes(session: SessionDependency, token: TokenDependency, clothes_id: int):
     """Получить данные по определенной вещи с типом одежды"""

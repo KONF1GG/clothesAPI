@@ -49,9 +49,6 @@ class NewClothes(BaseModel):
     type_id: int
     user_id: int
 
-class ClothesModel(NewClothes):
-    id: int
-
 class ClothesModelAll(BaseModel):
     id: int
     name: str
@@ -62,3 +59,20 @@ class ClothesModelAll(BaseModel):
 class UpdateClothes(BaseModel):
     name: Optional[str] = None
     type_id: Optional[int] = None
+
+
+class ClothesTypeModel(BaseModel):
+    id: int
+    name: str
+    category: str
+
+    class Config:
+        from_attributes = True
+
+class ClothesModel(BaseModel):
+    id: int
+    name: str
+    type: ClothesTypeModel
+
+    class Config:
+        from_attributes = True
