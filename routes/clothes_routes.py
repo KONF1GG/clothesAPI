@@ -1,12 +1,15 @@
 import json
+import os
 from typing import Optional
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 import uuid
 from pathlib import Path
 import aiofiles
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
+from config import UPLOAD_FOLDER
 from dependencies import SessionDependency, TokenDependency
 from models import Clothes, ClothesType, User
 from schemas import ClothesModel, ClothesModelAll, ClothesTypeModel, ItemId, NewClothes, UpdateClothes
@@ -15,10 +18,8 @@ from sqlalchemy.orm import selectinload
 
 router = APIRouter()
 
-UPLOAD_FOLDER = "uploaded_images"
-Path(UPLOAD_FOLDER).mkdir(parents=True, exist_ok=True)
 
-# Добавление вещи
+
 @router.post('/v1/wardrobe', response_model=ItemId)
 async def add_clothes(
     session: SessionDependency,
@@ -36,17 +37,22 @@ async def add_clothes(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+
     file_name = f"{uuid.uuid4().hex}.jpg"
     file_location = Path(UPLOAD_FOLDER) / file_name
+    print(file_location)
 
-    async with aiofiles.open(file_location, 'wb') as f:
-        await f.write(await file.read())
+    try:
+        async with aiofiles.open(file_location, 'wb') as f:
+            await f.write(await file.read())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error saving file: {str(e)}")
 
     new_clothes = Clothes(
         name=clothes_item_data.name,
         type_id=clothes_item_data.type_id,
         user_id=clothes_item_data.user_id,
-        image_url=str(file_location)
+        image_url=str(file_name)
     )
 
     new_clothes = await crud.add_item(session, new_clothes)
@@ -91,23 +97,24 @@ async def get_clothes(session: SessionDependency, token: TokenDependency, clothe
         id=item.id,
         name=item.name,
         type=item.type.name, 
+        url=item.image_url,
         category=item.type.category,
         user_id=item.user_id,
     )
 
 
-@router.get('/v1/wardrobe/image/{clothes_id}')
-async def get_clothes_image(clothes_id: int, token: TokenDependency, session: SessionDependency):
-    """Получить изображение вещи по её ID."""
-    clothes = await crud.get_item(session, Clothes, clothes_id)
-    if not clothes:
-        raise HTTPException(status_code=404, detail="Clothes not found")
+# @router.get('/v1/wardrobe/image/{clothes_id}')
+# async def get_clothes_image(clothes_id: int, token: TokenDependency, session: SessionDependency):
+#     """Получить изображение вещи по её ID."""
+#     clothes = await crud.get_item(session, Clothes, clothes_id)
+#     if not clothes:
+#         raise HTTPException(status_code=404, detail="Clothes not found")
 
-    image_path = Path(clothes.image_url)
-    if not image_path.exists():
-        raise HTTPException(status_code=404, detail="Image not found")
+#     image_path = Path(clothes.image_url)
+#     if not image_path.exists():
+#         raise HTTPException(status_code=404, detail="Image not found")
 
-    return FileResponse(image_path)
+#     return FileResponse(image_path)
 
 @router.delete('/v1/wardrobe/{clothes_id}', response_model=ItemId)
 async def delete_clothes(clothes_id: int, session: SessionDependency, token: TokenDependency):
@@ -145,9 +152,12 @@ async def update_clothes_data(
         id=item.id,
         name=item.name,
         type=item.type.name, 
+        url=item.image_url,
         category=item.type.category,
         user_id=item.user_id,
     )
+
+
 
 @router.patch('/v1/wardrobe/image/{clothes_id}', response_model=ClothesModelAll)
 async def update_clothes_image(

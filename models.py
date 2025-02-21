@@ -62,7 +62,7 @@ class ClothesType(Base):
 class Clothes(Base):
     __tablename__ = 'clothes'
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True,  autoincrement=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     user_id: Mapped[int] = mapped_column(
         Integer, ForeignKey('user.id', ondelete="CASCADE"), index=True, nullable=False

@@ -1,6 +1,8 @@
+from pathlib import Path
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from config import UPLOAD_FOLDER
 from models import Base, ClothesType, User, Session, engine
 
 async def lifespan(app: FastAPI):

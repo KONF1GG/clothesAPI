@@ -53,6 +53,7 @@ class ClothesModelAll(BaseModel):
     id: int
     name: str
     type: str
+    url: str
     category: str
     user_id: int
 
