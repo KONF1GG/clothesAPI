@@ -75,6 +75,7 @@ async def get_wardrobe(session: SessionDependency, user_id: int):
                 name=item.type.name,
                 category=item.type.category,
             ),
+            url=item.image_url,
         )
         for item in clothes
     ]

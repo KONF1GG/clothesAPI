@@ -23,7 +23,7 @@ async def login_user(login_data: Login, session: SessionDependency):
 
     token = Token(user_id=user_model.id)
     token = await crud.add_item(session, token)
-    return {'token': token.token}
+    return {'token': token.token, 'user_id': user_model.id}
 
 @router.post('/v1/token', response_model=StatusResponse)
 async def login_user(token: TokenDependency):

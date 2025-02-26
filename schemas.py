@@ -40,6 +40,7 @@ class Login(BaseUser):
 
 class LoginResponse(BaseModel):
     token: uuid.UUID
+    user_id: int
 
 class StatusResponse(BaseModel):
     status: Literal['success', 'deleted', 'error']
@@ -74,6 +75,6 @@ class ClothesModel(BaseModel):
     id: int
     name: str
     type: ClothesTypeModel
-
+    url: str
     class Config:
         from_attributes = True
