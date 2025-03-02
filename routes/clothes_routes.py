@@ -37,8 +37,6 @@ async def add_clothes(
 
     file_name = f"{uuid.uuid4().hex}.jpg"
     file_location = Path(UPLOAD_FOLDER) / file_name
-    print(file_location)
-
     try:
         img_data = await file.read()
         img = Image.open(io.BytesIO(img_data))
