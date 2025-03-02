@@ -1,12 +1,10 @@
-import json
-import os
+import io
+from PIL import Image
 from typing import Optional
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 import uuid
 from pathlib import Path
 import aiofiles
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from config import UPLOAD_FOLDER
@@ -37,16 +35,20 @@ async def add_clothes(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-
     file_name = f"{uuid.uuid4().hex}.jpg"
     file_location = Path(UPLOAD_FOLDER) / file_name
     print(file_location)
 
     try:
+        img_data = await file.read()
+        img = Image.open(io.BytesIO(img_data))
+
+        img = img.resize((160, 160), Image.Resampling.LANCZOS)
+
         async with aiofiles.open(file_location, 'wb') as f:
-            await f.write(await file.read())
+            img.save(f, format="JPEG")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error saving file: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
 
     new_clothes = Clothes(
         name=clothes_item_data.name,
